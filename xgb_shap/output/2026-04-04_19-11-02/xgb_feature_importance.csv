@@ -1,0 +1,5 @@
+feature,importance
+Margin_Maintenance_Ratio,0.14436865
+cs_zscore_turnover,0.15920335
+ts_mean_close_5,0.5119564
+ts_std_close_10,0.1844716

@@ -1,0 +1,421 @@
+{
+  "meta": {
+    "correlation_threshold": 0.4,
+    "min_slice_size": 30,
+    "max_unique_for_filter": 12,
+    "role_primary_abs_rho": 0.4,
+    "role_noise_abs_rho": 0.15,
+    "role_anchor_min_abs_rho_spread": 0.2,
+    "role_high_shap_quantile": 0.5,
+    "discretization_scan_strong_abs_rho": 0.4,
+    "discretization_scan_quantiles": [
+      0.1,
+      0.2,
+      0.5,
+      0.8,
+      0.9
+    ],
+    "global_mean_abs_shap_by_feature": {
+      "Margin_Maintenance_Ratio": 0.00039732,
+      "cs_zscore_turnover": 0.00063907,
+      "ts_mean_close_5": 0.00016901,
+      "ts_std_close_10": 0.0003664
+    },
+    "filters": [],
+    "factors": [
+      "Margin_Maintenance_Ratio",
+      "cs_zscore_turnover",
+      "ts_mean_close_5",
+      "ts_std_close_10"
+    ],
+    "filters_auto_assigned": [],
+    "factors_auto_assigned": [
+      "Margin_Maintenance_Ratio",
+      "cs_zscore_turnover",
+      "ts_mean_close_5",
+      "ts_std_close_10"
+    ],
+    "manual_filters": [],
+    "manual_factors": []
+  },
+  "findings": [],
+  "pair_analyses": [],
+  "discovered_anchors": [
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "> 80th percentile (value = 19)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.994577,
+      "n_samples": 17923,
+      "insight": "When Margin_Maintenance_Ratio is > 19, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9946)."
+    },
+    {
+      "discovered_anchor": "ts_mean_close_5",
+      "threshold_condition": "> 10th percentile (value = 22.5512)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.993992,
+      "n_samples": 122605,
+      "insight": "When ts_mean_close_5 is > 22.5512, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9940)."
+    },
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "<= 80th percentile (value = 19)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.993628,
+      "n_samples": 118305,
+      "insight": "When Margin_Maintenance_Ratio is <= 19, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9936)."
+    },
+    {
+      "discovered_anchor": "ts_std_close_10",
+      "threshold_condition": "> 80th percentile (value = 5.56337)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.993462,
+      "n_samples": 27246,
+      "insight": "When ts_std_close_10 is > 5.56337, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9935)."
+    },
+    {
+      "discovered_anchor": "ts_std_close_10",
+      "threshold_condition": "<= 80th percentile (value = 5.56337)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.993388,
+      "n_samples": 108982,
+      "insight": "When ts_std_close_10 is <= 5.56337, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9934)."
+    },
+    {
+      "discovered_anchor": "ts_mean_close_5",
+      "threshold_condition": "<= 10th percentile (value = 22.5512)",
+      "activated_factor": "cs_zscore_turnover",
+      "spearman_rho": -0.992253,
+      "n_samples": 13623,
+      "insight": "When ts_mean_close_5 is <= 22.5512, cs_zscore_turnover becomes highly monotonic (Spearman = -0.9923)."
+    },
+    {
+      "discovered_anchor": "ts_mean_close_5",
+      "threshold_condition": "<= 10th percentile (value = 22.5512)",
+      "activated_factor": "ts_std_close_10",
+      "spearman_rho": -0.982154,
+      "n_samples": 13623,
+      "insight": "When ts_mean_close_5 is <= 22.5512, ts_std_close_10 becomes highly monotonic (Spearman = -0.9822)."
+    },
+    {
+      "discovered_anchor": "cs_zscore_turnover",
+      "threshold_condition": "<= 10th percentile (value = -0.238292)",
+      "activated_factor": "ts_std_close_10",
+      "spearman_rho": -0.911785,
+      "n_samples": 13623,
+      "insight": "When cs_zscore_turnover is <= -0.238292, ts_std_close_10 becomes highly monotonic (Spearman = -0.9118)."
+    },
+    {
+      "discovered_anchor": "cs_zscore_turnover",
+      "threshold_condition": "<= 10th percentile (value = -0.238292)",
+      "activated_factor": "ts_mean_close_5",
+      "spearman_rho": 0.84186,
+      "n_samples": 13623,
+      "insight": "When cs_zscore_turnover is <= -0.238292, ts_mean_close_5 becomes highly monotonic (Spearman = 0.8419)."
+    },
+    {
+      "discovered_anchor": "ts_std_close_10",
+      "threshold_condition": "<= 80th percentile (value = 5.56337)",
+      "activated_factor": "ts_mean_close_5",
+      "spearman_rho": 0.837019,
+      "n_samples": 108982,
+      "insight": "When ts_std_close_10 is <= 5.56337, ts_mean_close_5 becomes highly monotonic (Spearman = 0.8370)."
+    },
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "> 80th percentile (value = 19)",
+      "activated_factor": "ts_mean_close_5",
+      "spearman_rho": 0.809432,
+      "n_samples": 17923,
+      "insight": "When Margin_Maintenance_Ratio is > 19, ts_mean_close_5 becomes highly monotonic (Spearman = 0.8094)."
+    },
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "<= 80th percentile (value = 19)",
+      "activated_factor": "ts_mean_close_5",
+      "spearman_rho": 0.769667,
+      "n_samples": 118305,
+      "insight": "When Margin_Maintenance_Ratio is <= 19, ts_mean_close_5 becomes highly monotonic (Spearman = 0.7697)."
+    },
+    {
+      "discovered_anchor": "cs_zscore_turnover",
+      "threshold_condition": "> 10th percentile (value = -0.238292)",
+      "activated_factor": "ts_mean_close_5",
+      "spearman_rho": 0.766572,
+      "n_samples": 122605,
+      "insight": "When cs_zscore_turnover is > -0.238292, ts_mean_close_5 becomes highly monotonic (Spearman = 0.7666)."
+    },
+    {
+      "discovered_anchor": "ts_mean_close_5",
+      "threshold_condition": "<= 10th percentile (value = 22.5512)",
+      "activated_factor": "Margin_Maintenance_Ratio",
+      "spearman_rho": -0.638206,
+      "n_samples": 13623,
+      "insight": "When ts_mean_close_5 is <= 22.5512, Margin_Maintenance_Ratio becomes highly monotonic (Spearman = -0.6382)."
+    },
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "> 80th percentile (value = 19)",
+      "activated_factor": "ts_std_close_10",
+      "spearman_rho": -0.564452,
+      "n_samples": 17923,
+      "insight": "When Margin_Maintenance_Ratio is > 19, ts_std_close_10 becomes highly monotonic (Spearman = -0.5645)."
+    },
+    {
+      "discovered_anchor": "Margin_Maintenance_Ratio",
+      "threshold_condition": "<= 80th percentile (value = 19)",
+      "activated_factor": "ts_std_close_10",
+      "spearman_rho": -0.525408,
+      "n_samples": 118305,
+      "insight": "When Margin_Maintenance_Ratio is <= 19, ts_std_close_10 becomes highly monotonic (Spearman = -0.5254)."
+    },
+    {
+      "discovered_anchor": "cs_zscore_turnover",
+      "threshold_condition": "> 10th percentile (value = -0.238292)",
+      "activated_factor": "Margin_Maintenance_Ratio",
+      "spearman_rho": -0.510242,
+      "n_samples": 122605,
+      "insight": "When cs_zscore_turnover is > -0.238292, Margin_Maintenance_Ratio becomes highly monotonic (Spearman = -0.5102)."
+    },
+    {
+      "discovered_anchor": "ts_std_close_10",
+      "threshold_condition": "<= 80th percentile (value = 5.56337)",
+      "activated_factor": "Margin_Maintenance_Ratio",
+      "spearman_rho": -0.493563,
+      "n_samples": 108982,
+      "insight": "When ts_std_close_10 is <= 5.56337, Margin_Maintenance_Ratio becomes highly monotonic (Spearman = -0.4936)."
+    },
+    {
+      "discovered_anchor": "ts_std_close_10",
+      "threshold_condition": "> 80th percentile (value = 5.56337)",
+      "activated_factor": "Margin_Maintenance_Ratio",
+      "spearman_rho": -0.484027,
+      "n_samples": 27246,
+      "insight": "When ts_std_close_10 is > 5.56337, Margin_Maintenance_Ratio becomes highly monotonic (Spearman = -0.4840)."
+    },
+    {
+      "discovered_anchor": "ts_mean_close_5",
+      "threshold_condition": "> 10th percentile (value = 22.5512)",
+      "activated_factor": "Margin_Maintenance_Ratio",
+      "spearman_rho": -0.472821,
+      "n_samples": 122605,
+      "insight": "When ts_mean_close_5 is > 22.5512, Margin_Maintenance_Ratio becomes highly monotonic (Spearman = -0.4728)."
+    },
+    {
+      "discovered_anchor": "cs_zscore_turnover",
+      "threshold_condition": "> 10th percentile (value = -0.238292)",
+      "activated_factor": "ts_std_close_10",
+      "spearman_rho": -0.459755,
+      "n_samples": 122605,
+      "insight": "When cs_zscore_turnover is > -0.238292, ts_std_close_10 becomes highly monotonic (Spearman = -0.4598)."
+    }
+  ],
+  "discretization_scan_by_feature": {
+    "Margin_Maintenance_Ratio": {
+      "quantile": 0.8,
+      "threshold_value": 19.0,
+      "direction": "greater_than",
+      "n_samples_greater_than": 17923,
+      "n_samples_less_or_equal": 118305,
+      "strong_abs_rho_threshold": 0.4,
+      "strongly_monotonic_other_factor_count": 3,
+      "strongly_monotonic_other_factors": [
+        "cs_zscore_turnover",
+        "ts_mean_close_5",
+        "ts_std_close_10"
+      ],
+      "per_slice_details": [
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.994577,
+          "n_samples": 17923
+        },
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.993628,
+          "n_samples": 118305
+        },
+        {
+          "other_factor": "ts_mean_close_5",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": 0.809432,
+          "n_samples": 17923
+        },
+        {
+          "other_factor": "ts_mean_close_5",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": 0.769667,
+          "n_samples": 118305
+        },
+        {
+          "other_factor": "ts_std_close_10",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.564452,
+          "n_samples": 17923
+        },
+        {
+          "other_factor": "ts_std_close_10",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.525408,
+          "n_samples": 118305
+        }
+      ],
+      "score_secondary_sum_abs_rho": 2.36846,
+      "summary": "Cut at 80th percentile (value = 19). When > 19, 3 other factor(s) become highly monotonic (|rho| >= 0.4).",
+      "skipped": false,
+      "global_raw_shap_spearman": -0.491402
+    },
+    "cs_zscore_turnover": {
+      "quantile": 0.1,
+      "threshold_value": -0.23829245,
+      "direction": "greater_than",
+      "n_samples_greater_than": 122605,
+      "n_samples_less_or_equal": 13623,
+      "strong_abs_rho_threshold": 0.4,
+      "strongly_monotonic_other_factor_count": 3,
+      "strongly_monotonic_other_factors": [
+        "Margin_Maintenance_Ratio",
+        "ts_mean_close_5",
+        "ts_std_close_10"
+      ],
+      "per_slice_details": [
+        {
+          "other_factor": "Margin_Maintenance_Ratio",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.510242,
+          "n_samples": 122605
+        },
+        {
+          "other_factor": "ts_mean_close_5",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": 0.766572,
+          "n_samples": 122605
+        },
+        {
+          "other_factor": "ts_mean_close_5",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": 0.84186,
+          "n_samples": 13623
+        },
+        {
+          "other_factor": "ts_std_close_10",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.459755,
+          "n_samples": 122605
+        },
+        {
+          "other_factor": "ts_std_close_10",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.911785,
+          "n_samples": 13623
+        }
+      ],
+      "score_secondary_sum_abs_rho": 2.263887,
+      "summary": "Cut at 10th percentile (value = -0.2383). When > -0.2383, 3 other factor(s) become highly monotonic (|rho| >= 0.4).",
+      "skipped": false,
+      "global_raw_shap_spearman": -0.993902
+    },
+    "ts_mean_close_5": {
+      "quantile": 0.1,
+      "threshold_value": 22.55115853,
+      "direction": "greater_than",
+      "n_samples_greater_than": 122605,
+      "n_samples_less_or_equal": 13623,
+      "strong_abs_rho_threshold": 0.4,
+      "strongly_monotonic_other_factor_count": 3,
+      "strongly_monotonic_other_factors": [
+        "Margin_Maintenance_Ratio",
+        "cs_zscore_turnover",
+        "ts_std_close_10"
+      ],
+      "per_slice_details": [
+        {
+          "other_factor": "Margin_Maintenance_Ratio",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.472821,
+          "n_samples": 122605
+        },
+        {
+          "other_factor": "Margin_Maintenance_Ratio",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.638206,
+          "n_samples": 13623
+        },
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.993992,
+          "n_samples": 122605
+        },
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.992253,
+          "n_samples": 13623
+        },
+        {
+          "other_factor": "ts_std_close_10",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.982154,
+          "n_samples": 13623
+        }
+      ],
+      "score_secondary_sum_abs_rho": 2.614352,
+      "summary": "Cut at 10th percentile (value = 22.55). When > 22.55, 3 other factor(s) become highly monotonic (|rho| >= 0.4).",
+      "skipped": false,
+      "global_raw_shap_spearman": 0.776035
+    },
+    "ts_std_close_10": {
+      "quantile": 0.8,
+      "threshold_value": 5.56337477,
+      "direction": "greater_than",
+      "n_samples_greater_than": 27246,
+      "n_samples_less_or_equal": 108982,
+      "strong_abs_rho_threshold": 0.4,
+      "strongly_monotonic_other_factor_count": 3,
+      "strongly_monotonic_other_factors": [
+        "Margin_Maintenance_Ratio",
+        "cs_zscore_turnover",
+        "ts_mean_close_5"
+      ],
+      "per_slice_details": [
+        {
+          "other_factor": "Margin_Maintenance_Ratio",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.484027,
+          "n_samples": 27246
+        },
+        {
+          "other_factor": "Margin_Maintenance_Ratio",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.493563,
+          "n_samples": 108982
+        },
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "greater_than_threshold",
+          "spearman_correlation": -0.993462,
+          "n_samples": 27246
+        },
+        {
+          "other_factor": "cs_zscore_turnover",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": -0.993388,
+          "n_samples": 108982
+        },
+        {
+          "other_factor": "ts_mean_close_5",
+          "slice": "less_or_equal_threshold",
+          "spearman_correlation": 0.837019,
+          "n_samples": 108982
+        }
+      ],
+      "score_secondary_sum_abs_rho": 2.324043,
+      "summary": "Cut at 80th percentile (value = 5.563). When > 5.563, 3 other factor(s) become highly monotonic (|rho| >= 0.4).",
+      "skipped": false,
+      "global_raw_shap_spearman": -0.53056
+    }
+  }
+}

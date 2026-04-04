@@ -1,0 +1,59 @@
+data:
+  handler_dir: backtest_2/data
+  start_date: '2020-04-06'
+stocks:
+  include: []
+  exclude: []
+filters:
+  min_value_dollars: 20000000
+  min_listing_days: 5
+  use_value_filter: true
+  use_listing_day_filter: true
+  use_opening_limit_filter: true
+  use_day_trade_filter: true
+  use_non_limit_up_filter: true
+target: intraday
+splits:
+  train_frac: 0.7
+  val_frac: 0.15
+output:
+  dir: xgb_shap/output
+random_state: 42
+xgboost:
+  n_estimators: 800
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.4
+  min_child_weight: 50
+  reg_lambda: 1.0
+  n_jobs: -1
+  early_stopping_rounds: 80
+shap:
+  sample: 5000
+  background_max: 2000
+  conditional_correlation_threshold: 0.4
+  conditional_min_slice_size: 30
+  conditional_max_unique_for_filter: 12
+  conditional_filter_columns: []
+  conditional_factor_columns: []
+  role_primary_abs_rho: 0.4
+  role_noise_abs_rho: 0.15
+  role_anchor_min_abs_rho_spread: 0.2
+  role_high_shap_quantile: 0.5
+  discretization_scan_strong_abs_rho: 0.4
+  discretization_scan_quantiles:
+  - 0.1
+  - 0.2
+  - 0.5
+  - 0.8
+  - 0.9
+features:
+- name: Margin_Maintenance_Ratio
+  expr: ts_rank(Margin_Maintenance_Ratio,20)
+- name: cs_zscore_turnover
+  expr: cs_zscore(Turnover)
+- name: ts_mean_close_5
+  expr: ts_mean(Close * Adjust_Factor, 5)
+- name: ts_std_close_10
+  expr: ts_std(Close * Adjust_Factor, 10)
