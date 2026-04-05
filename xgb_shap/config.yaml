@@ -21,7 +21,8 @@ filters:
   use_day_trade_filter: true
   use_non_limit_up_filter: true
 
-target: intraday
+# intraday | winsorize_intraday (1–99% global clip) | overnight | day
+target: winsorize_intraday
 
 splits:
   train_frac: 0.7

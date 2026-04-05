@@ -67,6 +67,30 @@ def _eval_features(handler: Handler, specs: list[tuple[str, str]]) -> dict[str, 
     return out
 
 
+def _winsorize_panel_returns_masked(
+    ret: pd.DataFrame,
+    mask: pd.DataFrame,
+    lower_q: float = 0.01,
+    upper_q: float = 0.99,
+) -> pd.DataFrame:
+    """
+    Clip returns to global [lower_q, upper_q] quantiles using only cells that are
+    finite and True in ``mask`` (same convention as stack_panel).
+    """
+    mask_a = mask.reindex(index=ret.index, columns=ret.columns).fillna(False)
+    vals = ret.to_numpy(dtype=np.float64, copy=True)
+    m = mask_a.to_numpy(dtype=bool)
+    eligible = m & np.isfinite(vals)
+    if not eligible.any():
+        return pd.DataFrame(vals, index=ret.index, columns=ret.columns)
+    flat = vals[eligible]
+    lo = float(np.quantile(flat, lower_q))
+    hi = float(np.quantile(flat, upper_q))
+    out = vals.copy()
+    out[eligible] = np.clip(vals[eligible], lo, hi)
+    return pd.DataFrame(out, index=ret.index, columns=ret.columns)
+
+
 def _build_returns_and_filters(
     handler: Handler,
     adj_close: pd.DataFrame,
@@ -110,6 +134,8 @@ def _build_returns_and_filters(
     return {
         "overnight": (exp_overnight_ret, 隔夜濾網),
         "intraday": (exp_intrday_ret, 日內濾網),
+        # Raw intraday return; winsorization at 1%/99% is applied in run() after universe slice.
+        "winsorize_intraday": (exp_intrday_ret, 日內濾網),
         "day": (exp_day_ret, 濾網),
     }
 
@@ -175,6 +201,8 @@ def run(cfg: TrainConfig) -> Path:
     features = _eval_features(handler, feature_specs)
     features = {k: v.loc[:, universe.columns] for k, v in features.items()}
     exp_ret = exp_ret.loc[:, universe.columns]
+    if target_name == "winsorize_intraday":
+        exp_ret = _winsorize_panel_returns_masked(exp_ret, universe, 0.01, 0.99)
 
     X_df, y_series = stack_panel(features, exp_ret, mask=universe)
 

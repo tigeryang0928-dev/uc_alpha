@@ -24,7 +24,7 @@ def main() -> None:
     p.add_argument("--start-date", default=None, help="Override config data.start_date")
     p.add_argument(
         "--target",
-        choices=("intraday", "overnight", "day"),
+        choices=("intraday", "winsorize_intraday", "overnight", "day"),
         default=None,
         help="Override config target",
     )
