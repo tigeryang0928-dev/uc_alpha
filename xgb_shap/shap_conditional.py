@@ -1,6 +1,7 @@
 """
 Conditional slices: Spearman(raw feature, SHAP for that feature) per filter state.
-See conditional_monotonic_factors.json output (findings + pair_analyses + recommended_role).
+Also: threshold splits and optional inner quantile bands on any continuous anchor.
+See conditional_monotonic_factors.json (findings, pair_analyses, discovered_anchors, discovered_band_anchors).
 """
 
 from __future__ import annotations
@@ -318,6 +319,227 @@ def scan_discretization_thresholds_for_feature(
     return best
 
 
+def _normalize_discretization_band_pairs(
+    raw: list[list[float]] | None,
+) -> list[tuple[float, float]]:
+    """Keep only pairs (q_lo, q_hi) with 0 < q_lo < q_hi < 1."""
+    if not raw:
+        return []
+    out: list[tuple[float, float]] = []
+    for row in raw:
+        if row is None or len(row) != 2:
+            continue
+        try:
+            a, b = float(row[0]), float(row[1])
+        except (TypeError, ValueError):
+            continue
+        q_lo, q_hi = (a, b) if a < b else (b, a)
+        if 0.0 < q_lo < q_hi < 1.0:
+            out.append((q_lo, q_hi))
+    return out
+
+
+def scan_band_quantiles_for_feature(
+    X: pd.DataFrame,
+    shap_values: np.ndarray,
+    *,
+    col_list: list[str],
+    factors: list[str],
+    f_scan: str,
+    min_slice_size: int,
+    strong_abs_rho: float,
+    band_pairs: list[tuple[float, float]],
+) -> dict[str, Any]:
+    """
+    For each quantile band (q_lo, q_hi), keep rows where the anchor feature lies between
+    its q_lo and q_hi sample quantiles (inclusive on both ends). In that slice, compute
+    Spearman(raw_j, shap_j) for every other continuous factor j.
+    """
+    if not band_pairs:
+        return {"skipped": True, "reason": "no_band_pairs", "bands": [], "summary": None}
+
+    if f_scan not in col_list:
+        return {"skipped": True, "reason": "feature_not_in_columns", "bands": [], "summary": None}
+
+    other_factors = [j for j in factors if j != f_scan]
+    if not other_factors:
+        return {"skipped": True, "reason": "no_other_factors", "bands": [], "summary": None}
+
+    x_scan = X[f_scan].to_numpy(dtype=np.float64, copy=False)
+    finite_scan = np.isfinite(x_scan)
+    if int(finite_scan.sum()) < min_slice_size:
+        return {
+            "skipped": True,
+            "reason": "insufficient_finite_scan_feature_rows",
+            "bands": [],
+            "summary": None,
+        }
+
+    x_valid = x_scan[finite_scan]
+    if np.unique(x_valid).size < 2:
+        return {"skipped": True, "reason": "scan_feature_near_constant", "bands": [], "summary": None}
+
+    band_rows: list[dict[str, Any]] = []
+    for q_lo, q_hi in band_pairs:
+        t_lo = float(np.quantile(x_valid, q_lo))
+        t_hi = float(np.quantile(x_valid, q_hi))
+        mask = finite_scan & (x_scan >= t_lo) & (x_scan <= t_hi)
+        n_b = int(mask.sum())
+        base_meta = {
+            "quantile_lo": round(float(q_lo), 6),
+            "quantile_hi": round(float(q_hi), 6),
+            "value_lo": round(t_lo, 8),
+            "value_hi": round(t_hi, 8),
+        }
+        if n_b < min_slice_size:
+            band_rows.append(
+                {
+                    **base_meta,
+                    "skipped": True,
+                    "reason": "insufficient_n_in_band",
+                    "n_samples": n_b,
+                    "per_band_details": [],
+                    "strongly_monotonic_other_factor_count": 0,
+                    "strongly_monotonic_other_factors": [],
+                }
+            )
+            continue
+
+        detail_rows: list[dict[str, Any]] = []
+        strong_factors: list[str] = []
+        for j in other_factors:
+            j_idx = col_list.index(j)
+            rho, nv, _ = _spearman_raw_vs_shap_slice(
+                X.loc[mask, j].to_numpy(dtype=np.float64, copy=False),
+                shap_values[mask, j_idx],
+                min_slice_size,
+            )
+            if rho is None:
+                continue
+            abs_r = abs(float(rho))
+            if abs_r >= strong_abs_rho:
+                detail_rows.append(
+                    {
+                        "other_factor": j,
+                        "spearman_correlation": round(float(rho), 6),
+                        "n_samples": nv,
+                    }
+                )
+                if j not in strong_factors:
+                    strong_factors.append(j)
+
+        pct_lo = _ordinal_percentile_label(q_lo)
+        pct_hi = _ordinal_percentile_label(q_hi)
+        band_rows.append(
+            {
+                **base_meta,
+                "skipped": False,
+                "reason": None,
+                "n_samples": n_b,
+                "strong_abs_rho_threshold": strong_abs_rho,
+                "strongly_monotonic_other_factor_count": len(strong_factors),
+                "strongly_monotonic_other_factors": list(strong_factors),
+                "per_band_details": list(detail_rows),
+                "band_label": (
+                    f"{pct_lo} to {pct_hi} percentile band [{t_lo:.6g}, {t_hi:.6g}]"
+                ),
+            }
+        )
+
+    n_ok = sum(1 for b in band_rows if not b.get("skipped"))
+    summ = (
+        f"Band scan on {len(band_pairs)} pair(s): {n_ok} band(s) with n >= {min_slice_size}."
+        if n_ok
+        else "No band had enough rows for min_slice_size."
+    )
+    return {
+        "skipped": False,
+        "reason": None,
+        "bands": band_rows,
+        "summary": summ,
+    }
+
+
+def _build_band_scan_results(
+    X: pd.DataFrame,
+    shap_values: np.ndarray,
+    *,
+    factors: list[str],
+    col_list: list[str],
+    min_slice_size: int,
+    strong_abs_rho: float,
+    band_pairs: list[tuple[float, float]],
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """
+    For each continuous anchor, scan inner quantile bands; collect discoveries where
+    |Spearman(raw_j, shap_j)| >= strong_abs_rho inside the band.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    discoveries: list[dict[str, Any]] = []
+    if not band_pairs:
+        return out, discoveries
+
+    for f_scan in sorted(set(factors)):
+        if f_scan not in col_list:
+            continue
+        sidx = col_list.index(f_scan)
+        g_rho = _global_raw_shap_self_spearman(
+            X[f_scan].to_numpy(dtype=np.float64, copy=False),
+            shap_values[:, sidx],
+            min_slice_size,
+        )
+        scanned = scan_band_quantiles_for_feature(
+            X,
+            shap_values,
+            col_list=col_list,
+            factors=factors,
+            f_scan=f_scan,
+            min_slice_size=min_slice_size,
+            strong_abs_rho=strong_abs_rho,
+            band_pairs=band_pairs,
+        )
+        scanned["global_raw_shap_spearman"] = (
+            round(float(g_rho), 6) if g_rho is not None else None
+        )
+        out[f_scan] = scanned
+        if scanned.get("skipped"):
+            continue
+        for band in scanned.get("bands", []):
+            if band.get("skipped"):
+                continue
+            v_lo = float(band["value_lo"])
+            v_hi = float(band["value_hi"])
+            q_lo = float(band["quantile_lo"])
+            q_hi = float(band["quantile_hi"])
+            mid = 0.5 * (v_lo + v_hi)
+            for row in band.get("per_band_details", []):
+                other = str(row["other_factor"])
+                rho = float(row["spearman_correlation"])
+                discoveries.append(
+                    {
+                        "scan_kind": "quantile_band",
+                        "discovered_anchor": f_scan,
+                        "band_quantile_lo": round(q_lo, 6),
+                        "band_quantile_hi": round(q_hi, 6),
+                        "value_lo": round(v_lo, 8),
+                        "value_hi": round(v_hi, 8),
+                        "value_mid": round(mid, 8),
+                        "threshold_value": round(mid, 8),
+                        "activated_factor": other,
+                        "spearman_rho": round(rho, 6),
+                        "n_samples": int(row.get("n_samples", 0)),
+                        "threshold_condition": str(band.get("band_label", "")),
+                        "insight": (
+                            f"When {f_scan} is in the {band.get('band_label', 'band')}, "
+                            f"{other} is highly monotonic vs its SHAP (Spearman = {rho:.4f})."
+                        ),
+                    }
+                )
+
+    discoveries.sort(key=lambda d: -abs(float(d["spearman_rho"])))
+    return out, discoveries
+
+
 def _build_discretization_scan_results(
     X: pd.DataFrame,
     shap_values: np.ndarray,
@@ -367,6 +589,7 @@ def _build_discretization_scan_results(
             slice_label = ">" if row.get("slice") == "greater_than_threshold" else "<="
             discoveries.append(
                 {
+                    "scan_kind": "threshold",
                     "discovered_anchor": f_scan,
                     "threshold_quantile": round(float(scanned["quantile"]), 6),
                     "threshold_value": round(t_val, 8),
@@ -402,6 +625,7 @@ def compute_conditional_monotonic_report(
     role_high_shap_quantile: float = 0.5,
     discretization_scan_strong_abs_rho: float = 0.8,
     discretization_scan_quantiles: list[float] | None = None,
+    discretization_scan_band_pairs: list[list[float]] | None = None,
 ) -> dict[str, Any]:
     """
     For each filter column and each observed state, slice rows and compute Spearman
@@ -539,6 +763,18 @@ def compute_conditional_monotonic_report(
         strong_abs_rho=discretization_scan_strong_abs_rho,
         quantiles=list(dq),
     )
+
+    band_pairs_norm = _normalize_discretization_band_pairs(discretization_scan_band_pairs)
+    band_map, band_discoveries = _build_band_scan_results(
+        X,
+        shap_values,
+        factors=factors,
+        col_list=col_list,
+        min_slice_size=min_slice_size,
+        strong_abs_rho=discretization_scan_strong_abs_rho,
+        band_pairs=band_pairs_norm,
+    )
+
     for p in pair_analyses:
         fn = str(p["factor_feature"])
         p["scanner_summary"] = scan_map.get(fn)
@@ -558,6 +794,7 @@ def compute_conditional_monotonic_report(
             "role_high_shap_quantile": role_high_shap_quantile,
             "discretization_scan_strong_abs_rho": discretization_scan_strong_abs_rho,
             "discretization_scan_quantiles": list(dq),
+            "discretization_scan_band_pairs": [list(p) for p in band_pairs_norm],
             "global_mean_abs_shap_by_feature": {
                 k: round(v, 8) for k, v in sorted(global_shap_map.items())
             },
@@ -567,6 +804,8 @@ def compute_conditional_monotonic_report(
         "pair_analyses": pair_analyses,
         "discovered_anchors": discoveries,
         "discretization_scan_by_feature": scan_map,
+        "discovered_band_anchors": band_discoveries,
+        "band_scan_by_feature": band_map,
     }
 
 
@@ -583,10 +822,12 @@ def plot_discovered_monotonic_thresholds(
     figsize: tuple[float, float] = (10, 6),
 ) -> bool:
     """
-    Plot threshold value on X and activated monotonic feature on Y.
+    Plot anchor value on X (single threshold or band midpoint) vs activated factor on Y.
     Returns True if a plot file is written.
     """
-    disc = list(report.get("discovered_anchors") or [])
+    disc_thr = list(report.get("discovered_anchors") or [])
+    disc_band = list(report.get("discovered_band_anchors") or [])
+    disc = disc_thr + disc_band
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -613,6 +854,8 @@ def plot_discovered_monotonic_thresholds(
         return False
 
     df = df.copy()
+    if "scan_kind" not in df.columns:
+        df["scan_kind"] = "threshold"
     df = df[np.isfinite(df["threshold_value"].astype(float))]
     if df.empty:
         return False
@@ -623,24 +866,53 @@ def plot_discovered_monotonic_thresholds(
     x = df["threshold_value"].astype(float).to_numpy()
     rho = df.get("spearman_rho", pd.Series([0.0] * len(df))).astype(float).to_numpy()
     size = 60 + 180 * np.clip(np.abs(rho), 0.0, 1.0)
+    is_band = df["scan_kind"].astype(str).eq("quantile_band").to_numpy()
 
     plt.figure(figsize=figsize)
-    sc = plt.scatter(
-        x,
-        y,
-        c=rho,
-        s=size,
-        cmap="coolwarm",
-        vmin=-1.0,
-        vmax=1.0,
-        alpha=0.85,
-        edgecolors="black",
-        linewidths=0.3,
-    )
+    sc = None
+    if (~is_band).any():
+        idx = ~is_band
+        sc = plt.scatter(
+            x[idx],
+            y[idx],
+            c=rho[idx],
+            s=size[idx],
+            cmap="coolwarm",
+            vmin=-1.0,
+            vmax=1.0,
+            alpha=0.85,
+            edgecolors="black",
+            linewidths=0.3,
+            marker="o",
+            label="Threshold split",
+        )
+    if is_band.any():
+        idx = is_band
+        sc_b = plt.scatter(
+            x[idx],
+            y[idx],
+            c=rho[idx],
+            s=size[idx],
+            cmap="coolwarm",
+            vmin=-1.0,
+            vmax=1.0,
+            alpha=0.85,
+            edgecolors="black",
+            linewidths=0.3,
+            marker="^",
+            label="Quantile band",
+        )
+        if sc is None:
+            sc = sc_b
+    if sc is None:
+        plt.close()
+        return False
     plt.yticks(np.arange(len(feats)), feats)
-    plt.xlabel("Threshold value")
+    plt.xlabel("Anchor value (threshold cut, or band midpoint)")
     plt.ylabel("Monotonic feature (activated_factor)")
-    plt.title("Discovered monotonic feature activations by threshold")
+    plt.title("Discovered monotonic activations (threshold cuts and inner bands)")
+    if disc_thr and disc_band:
+        plt.legend(loc="best", fontsize=8)
     cbar = plt.colorbar(sc)
     cbar.set_label("Spearman rho")
     plt.tight_layout()
@@ -681,8 +953,13 @@ def print_conditional_summary(report: dict[str, Any]) -> None:
                 print(f"  • Threshold scan [{p.get('filter_feature')} → {p.get('factor_feature')}]: {summ}")
     disc = report.get("discovered_anchors") or []
     if disc:
-        print(f"Discretization scanner discoveries: {len(disc)}")
+        print(f"Discretization scanner (threshold) discoveries: {len(disc)}")
         for d in disc[:20]:
+            print(f"  • {d['insight']}")
+    band_disc = report.get("discovered_band_anchors") or []
+    if band_disc:
+        print(f"Quantile-band scanner discoveries: {len(band_disc)}")
+        for d in band_disc[:20]:
             print(f"  • {d['insight']}")
 
 

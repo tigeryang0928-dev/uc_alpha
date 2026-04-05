@@ -1,2 +1,4 @@
 backtest_2/data/
 xgb_shap/output/
+__pycache__/
+*.py[cod]

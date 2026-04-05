@@ -78,6 +78,8 @@ class ShapConfig:
     discretization_scan_quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
+    # Each [q_lo, q_hi] with 0 < q_lo < q_hi < 1: scan Spearman inside anchor values between those quantiles.
+    discretization_scan_band_pairs: list[list[float]] = field(default_factory=list)
 
 
 @dataclass

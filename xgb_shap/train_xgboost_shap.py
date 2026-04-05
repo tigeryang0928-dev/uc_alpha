@@ -142,16 +142,17 @@ def _spearman_ic(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 def run(cfg: TrainConfig) -> Path:
     """
     Each run writes under ``output.dir / <YYYY-mm-dd_HH-MM-SS> /`` (see config).
-    Writes a single ``config.yaml`` there: the effective settings after YAML + CLI overrides.
+    Writes ``config_<experiment_id>.yaml`` there (same string as the run folder name):
+    effective settings after YAML + CLI overrides.
     """
     base_out = Path(cfg.resolved_output_dir())
-    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    out_dir = base_out / stamp
+    experiment_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    out_dir = base_out / experiment_id
     out_dir.mkdir(parents=True, exist_ok=True)
     plots_dir = out_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
-    save_train_config_yaml(cfg, out_dir / "config.yaml")
+    save_train_config_yaml(cfg, out_dir / f"config_{experiment_id}.yaml")
 
     print(f"Run output directory: {out_dir}")
 
@@ -306,6 +307,7 @@ def run(cfg: TrainConfig) -> Path:
             role_high_shap_quantile=sc.role_high_shap_quantile,
             discretization_scan_strong_abs_rho=sc.discretization_scan_strong_abs_rho,
             discretization_scan_quantiles=list(sc.discretization_scan_quantiles),
+            discretization_scan_band_pairs=list(sc.discretization_scan_band_pairs),
         )
     except ValueError as e:
         print(f"conditional monotonic analysis skipped: {e}")
@@ -314,6 +316,8 @@ def run(cfg: TrainConfig) -> Path:
             "findings": [],
             "pair_analyses": [],
             "discovered_anchors": [],
+            "discovered_band_anchors": [],
+            "band_scan_by_feature": {},
         }
     cond_path = out_dir / "conditional_monotonic_factors.json"
     save_conditional_monotonic_json(cond_report, cond_path)
