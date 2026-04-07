@@ -9,6 +9,7 @@
 - Main training entry is `xgb_shap/train_xgboost_shap.py`; defaults and overrides live in `xgb_shap/config.yaml` and `xgb_shap/train_config.py`.
 - Conditional and discretization scans are implemented in `xgb_shap/shap_conditional.py`; optional inner-quantile band scans use `discretization_scan_band_pairs` (each pair needs 0 < q_lo < q_hi < 1).
 - Each run writes under `xgb_shap/output/<YYYY-mm-dd_HH-MM-SS>/`; the effective config snapshot is `config_<same_timestamp>.yaml` in that folder.
+- **FAMOSE** (DSL feature discovery): package under `xgb_shap/famose/`; settings only in `xgb_shap/famose/config.yaml` via `load_famose_config()` / `load_train_config(..., famose_config_path=...)`. Verify without SHAP using root `famose_verify.py` (or `xgb_shap/famose_cli.py`). Runs write under `xgb_shap/output/famose_runs_<YYYY-mm-dd_HH-MM-SS>/` (`famose_trace.jsonl`, `famose_summary.json`, `discovered_features.yaml`). `--dry-run` needs no `OPENAI_API_KEY` and stops after round 0.
 - Root `SYSTEMS.md` maps conversational system names (e.g. ML training, Handler / data bridge) to paths and responsibilities.
 - `.gitignore` excludes `backtest_2/data/`, `xgb_shap/output/`, and Python bytecode (`__pycache__/`, `*.py[cod]`).
 - Remote GitHub repo for this project is `tigeryang0928-dev/uc_alpha`; HTTPS is often used when SSH to GitHub fails on this machine.

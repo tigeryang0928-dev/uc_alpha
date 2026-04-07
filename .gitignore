@@ -1,4 +1,6 @@
 backtest_2/data/
 xgb_shap/output/
+# Local LLM / quota settings; copy from famose/config.example.yaml
+xgb_shap/famose/config.yaml
 __pycache__/
 *.py[cod]

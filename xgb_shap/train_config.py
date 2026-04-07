@@ -9,6 +9,8 @@ from typing import Any
 import yaml
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
+_XGB_SHAP_ROOT = Path(__file__).resolve().parent
+DEFAULT_FAMOSE_CONFIG_PATH = _XGB_SHAP_ROOT / "famose" / "config.yaml"
 
 
 def _resolve_path(p: str) -> str:
@@ -83,6 +85,25 @@ class ShapConfig:
 
 
 @dataclass
+class FamoseConfig:
+    """FAMOSE-style DSL discovery; see xgb_shap/famose/."""
+
+    max_rounds: int = 5
+    max_steps_per_round: int = 6
+    min_rel_improvement: float = 0.01
+    early_stop_rounds_no_gain: int = 3
+    run_subdir: str = "famose_runs"
+    # openai: OpenAI-compatible POST {llm_base_url}/chat/completions + OPENAI_API_KEY
+    # gemini: Google AI Studio REST v1beta + GEMINI_API_KEY (or GOOGLE_API_KEY)
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-4o-mini"
+    llm_temperature: float = 0.8
+    llm_base_url: str = "https://api.openai.com/v1"
+    mrmr_max_features: int | None = None
+    date_sample_frac: float = 1.0
+
+
+@dataclass
 class TrainConfig:
     data: DataConfig = field(default_factory=DataConfig)
     stocks: StocksConfig = field(default_factory=StocksConfig)
@@ -93,6 +114,7 @@ class TrainConfig:
     random_state: int = 42
     xgboost: dict[str, Any] = field(default_factory=dict)
     shap: ShapConfig = field(default_factory=ShapConfig)
+    famose: FamoseConfig = field(default_factory=FamoseConfig)
     features: list[dict[str, str]] = field(default_factory=list)
 
     def resolved_handler_dir(self) -> str:
@@ -112,7 +134,31 @@ class TrainConfig:
         return out
 
 
-def load_train_config(path: str | Path) -> TrainConfig:
+def load_famose_config(path: str | Path | None = None) -> FamoseConfig:
+    """
+    Load ``FamoseConfig`` from the FAMOSE-only YAML (default: ``xgb_shap/famose/config.yaml``).
+
+    The file may be either a flat mapping of Famose fields or a single top-level ``famose:`` mapping.
+    If the path is missing, returns ``FamoseConfig()`` defaults.
+    """
+    p = Path(path) if path is not None else DEFAULT_FAMOSE_CONFIG_PATH
+    if not p.is_file():
+        return FamoseConfig()
+    with p.open(encoding="utf-8") as f:
+        raw = yaml.safe_load(f) or {}
+    nested = raw.get("famose")
+    if isinstance(nested, dict):
+        famose_raw = nested
+    else:
+        famose_raw = raw
+    return FamoseConfig(**_pick(famose_raw, FamoseConfig))
+
+
+def load_train_config(
+    path: str | Path,
+    *,
+    famose_config_path: str | Path | None = None,
+) -> TrainConfig:
     path = Path(path)
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
@@ -141,6 +187,7 @@ def load_train_config(path: str | Path) -> TrainConfig:
         random_state=int(raw.get("random_state", 42)),
         xgboost=xgb_merged,
         shap=ShapConfig(**_pick(raw.get("shap"), ShapConfig)),
+        famose=load_famose_config(famose_config_path),
         features=list(raw.get("features") or []),
     )
 

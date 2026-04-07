@@ -49,18 +49,18 @@ shap:
   sample: 5000
   background_max: 2000
   # Low-cardinality columns -> "filters"; others -> "factors". Override with manual lists.
-  conditional_correlation_threshold: 0.6
+  conditional_correlation_threshold: 0.7
   conditional_min_slice_size: 3000
   conditional_max_unique_for_filter: 20
   conditional_filter_columns: []
   conditional_factor_columns: []
   # Role thresholds: primary (|rho|), noise (|rho| cap), anchor (spread of |rho| across states), SHAP "high" bar
-  role_primary_abs_rho: 0.6
+  role_primary_abs_rho: 0.7
   role_noise_abs_rho: 0.15
   role_anchor_min_abs_rho_spread: 0.3
   role_high_shap_quantile: 0.5
   # Quantile cuts tested to turn any continuous feature into a binary regime filter
-  discretization_scan_strong_abs_rho: 0.6
+  discretization_scan_strong_abs_rho: 0.7
   discretization_scan_quantiles: [0.1, 0.25, 0.5, 0.75, 0.9]
   # Optional: monotonicity scan only when the anchor lies between two quantiles (inner band), e.g. middle 80%.
   discretization_scan_band_pairs:
@@ -75,5 +75,7 @@ features:
     expr: Turnover/ts_mean(Turnover, 20)
   - name: return_rate
     expr: (Close * Adjust_Factor/ts_delay(Close*Adjust_Factor,1) - 1)
-  - name: ts_std_return_rate_10
-    expr: ts_std((Close * Adjust_Factor/ts_delay(Close*Adjust_Factor,1) - 1), 10)
+  - name: Large_vs_Small_Holder_mean_diff
+    expr: ts_mean(Custodied_Greater_Than_1000_Lots_Pct, 21) - ts_mean(Custodied_Under_400_Lots_Pct, 21)
+
+# FAMOSE settings live in xgb_shap/famose/config.yaml (see famose_verify.py).

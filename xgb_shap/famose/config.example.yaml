@@ -1,0 +1,16 @@
+# Copy to config.yaml and adjust (config.yaml is gitignored).
+# Run: python famose_verify.py  (uses xgb_shap/config.yaml for data/target/features + config.yaml for FAMOSE).
+
+max_rounds: 5
+max_steps_per_round: 6
+min_rel_improvement: 0.01
+early_stop_rounds_no_gain: 3
+run_subdir: famose_runs
+# LLM: openai needs OPENAI_API_KEY; gemini needs GEMINI_API_KEY or GOOGLE_API_KEY.
+llm_provider: openai
+llm_model: gpt-4o-mini
+llm_temperature: 0.8
+llm_base_url: https://api.openai.com/v1
+
+mrmr_max_features: null
+date_sample_frac: 1.0
