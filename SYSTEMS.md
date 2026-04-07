@@ -24,6 +24,7 @@ Paths are relative to the repository root.
 | **Data sanity check** | `data_print.py` | Small script to peek at a parquet (example: `turnover`). |
 | **Dependencies** | `requirements.txt` | Python packages. |
 | **FAMOSE (feature discovery)** | `xgb_shap/famose/` (`config.yaml` + package), `famose_verify.py`, `xgb_shap/famose_cli.py` | FAMOSE settings in `famose/config.yaml`; main `config.yaml` supplies data/target/seed features. Writes `output.dir/famose_runs_<ts>/`. |
+| **FAMOSE + Cursor CLI (optional)** | `xgb_shap/famose/cursor_cli.py`, `scripts/install_cursor_agent.ps1`, `scripts/install_cursor_agent.sh` | Headless Cursor `agent` wiring (Windows `Cursor.exe` + `cli.js`); install helpers for standalone `agent` on WSL/macOS/Linux. |
 
 ---
 
@@ -40,6 +41,7 @@ Paths are relative to the repository root.
 - **Config:** `xgb_shap/famose/config.yaml` (FAMOSE-only). Main `xgb_shap/config.yaml` still provides data, target, splits, XGBoost params, and seed `features`. `load_train_config(..., famose_config_path=...)` merges them.
 - **Depends on:** `train_config.py` (`FamoseConfig`, `load_famose_config`), `train_xgboost_shap.py` (panel + target builders), `panel_ml.py`, `backtest_2/method.py`, `Handler`.
 - **Verify:** `python famose_verify.py --dry-run` (no API key). Full loop needs `OPENAI_API_KEY`. Outputs are under `xgb_shap/output/famose_runs_<timestamp>/` by default.
+- **Cursor CLI (optional):** `xgb_shap/famose/cursor_cli.py` integrates FAMOSE with the Cursor IDE headless `agent` on Windows; `scripts/install_cursor_agent.*` install the standalone `agent` CLI for WSL/Linux/macOS.
 
 ### ML training (XGBoost + SHAP) — `xgb_shap/train_xgboost_shap.py`
 

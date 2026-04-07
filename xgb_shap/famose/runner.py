@@ -19,8 +19,15 @@ from famose.context import (
 )
 from famose.evaluate import score_candidate
 from famose.expr_validate import allowed_names_for_handler, validate_feature_expr
-from famose.llm import famose_chat_completion, parse_proposal_json
+from famose.llm import (
+    GEMINI_429_MAX_CONSECUTIVE,
+    famose_chat_completion,
+    parse_proposal_json,
+)
+from famose.cursor_cli import resolve_workspace
 from famose.mrmr import mrmr_select_features
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _safe_name(name: str, used: set[str]) -> str:
@@ -62,6 +69,7 @@ def run_famose(cfg: TrainConfig, *, api_key: str | None = None, dry_run: bool = 
         round_best: tuple[str, str] | None = None
         round_best_rmse = float("inf")
         round_best_rel = 0.0
+        gemini_429_step_streak = 0
 
         for step in range(fc.max_steps_per_round):
             if dry_run and r == 0 and step == 0:
@@ -87,6 +95,7 @@ def run_famose(cfg: TrainConfig, *, api_key: str | None = None, dry_run: bool = 
                 )
                 user_msg = json.dumps(meta, indent=2)
                 try:
+                    prov_l = fc.llm_provider.strip().lower()
                     raw = famose_chat_completion(
                         [
                             {"role": "system", "content": sys_msg},
@@ -97,10 +106,42 @@ def run_famose(cfg: TrainConfig, *, api_key: str | None = None, dry_run: bool = 
                         temperature=fc.llm_temperature,
                         base_url=fc.llm_base_url,
                         api_key=api_key,
+                        cursor_workspace=resolve_workspace(fc.llm_cursor_workspace, _REPO_ROOT)
+                        if prov_l == "cursor"
+                        else None,
+                        cursor_cli=fc.llm_cursor_cli,
+                        cursor_extra_args=fc.llm_cursor_extra_args,
+                        cursor_timeout_sec=fc.llm_cursor_timeout_sec,
                     )
                 except Exception as e:
-                    log({"round": r, "step": step, "error": str(e)})
-                    break
+                    err_s = str(e)
+                    log({"round": r, "step": step, "error": err_s})
+                    prov = fc.llm_provider.strip().lower()
+                    is_gem = prov in ("gemini", "google", "google_gemini")
+                    is_429 = "429" in err_s or "RESOURCE_EXHAUSTED" in err_s
+                    if is_gem and is_429:
+                        gemini_429_step_streak += 1
+                        log(
+                            {
+                                "round": r,
+                                "step": step,
+                                "gemini_429_step_streak": gemini_429_step_streak,
+                            }
+                        )
+                        if gemini_429_step_streak >= GEMINI_429_MAX_CONSECUTIVE:
+                            log(
+                                {
+                                    "round": r,
+                                    "step": step,
+                                    "gemini_429_streak_break": True,
+                                    "message": f"{GEMINI_429_MAX_CONSECUTIVE} consecutive Gemini 429 step failures",
+                                }
+                            )
+                            break
+                        continue
+                    gemini_429_step_streak = 0
+                    continue
+                gemini_429_step_streak = 0
                 proposal = parse_proposal_json(raw) or {}
                 proposal["_raw_head"] = raw[:2000]
 
@@ -108,7 +149,10 @@ def run_famose(cfg: TrainConfig, *, api_key: str | None = None, dry_run: bool = 
             expr = str(proposal.get("expr") or "").strip()
             err = validate_feature_expr(expr, allow)
             if err:
-                log({"round": r, "step": step, "reject": err, "expr": expr})
+                row = {"round": r, "step": step, "reject": err, "expr": expr}
+                if not expr and proposal.get("_raw_head"):
+                    row["llm_raw_head"] = str(proposal["_raw_head"])[:2000]
+                log(row)
                 continue
 
             fname = _safe_name(name or "famose_feat", names_used)

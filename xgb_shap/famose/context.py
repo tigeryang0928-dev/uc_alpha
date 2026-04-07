@@ -27,6 +27,21 @@ from train_xgboost_shap import (  # noqa: E402
 )
 from utils.data_bridge import Handler  # noqa: E402
 
+# Feature panel may omit a few instruments vs universe; pad with NaN unless too many are missing.
+FAMOSE_MAX_MISSING_INSTRUMENT_COLUMNS = 20
+
+
+def _align_feature_to_universe_columns(
+    f: pd.DataFrame, universe_cols: pd.Index, *, max_missing: int
+) -> pd.DataFrame:
+    cols = list(universe_cols)
+    missing = [c for c in cols if c not in f.columns]
+    if not missing:
+        return f.loc[:, cols]
+    if len(missing) >= max_missing:
+        raise KeyError(f"{missing!r} not in index")
+    return f.reindex(columns=cols)
+
 
 @dataclass
 class FamosePanelContext:
@@ -68,7 +83,13 @@ def build_panel_context(cfg: TrainConfig) -> FamosePanelContext:
 
 def eval_specs(ctx: FamosePanelContext, specs: list[tuple[str, str]]) -> dict[str, pd.DataFrame]:
     feats = _eval_features(ctx.handler, specs)
-    return {k: v.loc[:, ctx.universe.columns] for k, v in feats.items()}
+    ucols = ctx.universe.columns
+    return {
+        k: _align_feature_to_universe_columns(
+            v, ucols, max_missing=FAMOSE_MAX_MISSING_INSTRUMENT_COLUMNS
+        )
+        for k, v in feats.items()
+    }
 
 
 def stack_from_specs(

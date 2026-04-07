@@ -95,10 +95,15 @@ class FamoseConfig:
     run_subdir: str = "famose_runs"
     # openai: OpenAI-compatible POST {llm_base_url}/chat/completions + OPENAI_API_KEY
     # gemini: Google AI Studio REST v1beta + GEMINI_API_KEY (or GOOGLE_API_KEY)
+    # cursor: see famose/cursor_cli.py — agent --print --force --model auto; optional env FAMOSE_CURSOR_CLI
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     llm_temperature: float = 0.8
     llm_base_url: str = "https://api.openai.com/v1"
+    llm_cursor_cli: str = "cursor"
+    llm_cursor_workspace: str | None = None
+    llm_cursor_timeout_sec: float = 600.0
+    llm_cursor_extra_args: list[str] = field(default_factory=list)
     mrmr_max_features: int | None = None
     date_sample_frac: float = 1.0
 

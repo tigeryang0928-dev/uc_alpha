@@ -7,10 +7,16 @@ min_rel_improvement: 0.01
 early_stop_rounds_no_gain: 3
 run_subdir: famose_runs
 # LLM: openai needs OPENAI_API_KEY; gemini needs GEMINI_API_KEY or GOOGLE_API_KEY.
+# cursor: see famose/cursor_cli.py — agent --print --force --model auto; env FAMOSE_CURSOR_CLI optional.
 llm_provider: openai
 llm_model: gpt-4o-mini
 llm_temperature: 0.8
 llm_base_url: https://api.openai.com/v1
+# llm_provider: cursor
+# llm_cursor_cli: cursor
+# llm_cursor_workspace: null
+# llm_cursor_timeout_sec: 600
+# llm_cursor_extra_args: []
 
 mrmr_max_features: null
 date_sample_frac: 1.0

@@ -72,10 +72,10 @@ features:
   - name: Margin_Maintenance_Ratio
     expr: Margin_Maintenance_Ratio
   - name: Turnover_Ratio
-    expr: Turnover/ts_mean(Turnover, 20)
+    expr: Turnover
   - name: return_rate
     expr: (Close * Adjust_Factor/ts_delay(Close*Adjust_Factor,1) - 1)
-  - name: Large_vs_Small_Holder_mean_diff
-    expr: ts_mean(Custodied_Greater_Than_1000_Lots_Pct, 21) - ts_mean(Custodied_Under_400_Lots_Pct, 21)
+  # - name: Large_vs_Small_Holder_mean_diff
+  #   expr: ts_mean(Custodied_Greater_Than_1000_Lots_Pct, 21) - ts_mean(Custodied_Under_400_Lots_Pct, 21)
 
 # FAMOSE settings live in xgb_shap/famose/config.yaml (see famose_verify.py).

@@ -19,6 +19,9 @@ FAMOSE hyperparameters and LLM settings live in ``xgb_shap/famose/config.yaml`` 
 
 LLM keys: set ``OPENAI_API_KEY`` for ``llm_provider: openai`` (``llm_base_url`` + ``/chat/completions``),
 or ``GEMINI_API_KEY`` / ``GOOGLE_API_KEY`` for ``llm_provider: gemini`` (Google AI Studio REST).
+For ``llm_provider: cursor``, see ``xgb_shap/famose/cursor_cli.py``: headless ``agent`` with
+``--model auto``, Windows launch via ``Cursor.exe`` + ``cli.js`` and ``ELECTRON_RUN_AS_NODE``.
+Override the executable with env ``FAMOSE_CURSOR_CLI`` if needed.
 """
 
 from __future__ import annotations
